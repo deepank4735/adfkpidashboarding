@@ -1,0 +1,36 @@
+{
+	"name": "DS_sourcetoblob",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_kpidashboardingdev",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "SqlServerTable",
+		"schema": [
+			{
+				"name": "player_id",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "player_name",
+				"type": "varchar"
+			},
+			{
+				"name": "player_role",
+				"type": "varchar"
+			},
+			{
+				"name": "player_salary",
+				"type": "int",
+				"precision": 10
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "Basketball"
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

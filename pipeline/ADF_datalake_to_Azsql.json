@@ -1,0 +1,110 @@
+{
+	"name": "ADF_datalake_to_Azsql",
+	"properties": {
+		"activities": [
+			{
+				"name": "copydata_datalake_to_Azsql",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"writeBehavior": "insert",
+						"sqlWriterUseTableLock": false,
+						"tableOption": "autoCreate",
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_datalake2sql_2ndstage",
+						"type": "DatasetReference",
+						"parameters": {
+							"sourcecontainer": {
+								"value": "@pipeline().parameters.sourcecontainer",
+								"type": "Expression"
+							},
+							"sourcedatalake": {
+								"value": "@pipeline().parameters.sourcedatalake",
+								"type": "Expression"
+							},
+							"sourcefilename": {
+								"value": "@pipeline().parameters.sourcefilename",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_sink_datalake2sql_2ndstage",
+						"type": "DatasetReference",
+						"parameters": {
+							"sqldbname": {
+								"value": "@pipeline().parameters.sqldb",
+								"type": "Expression"
+							},
+							"sqltablename": {
+								"value": "@pipeline().parameters.sqltable",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"sourcecontainer": {
+				"type": "string",
+				"defaultValue": "test"
+			},
+			"sourcedatalake": {
+				"type": "string",
+				"defaultValue": "folder"
+			},
+			"sourcefilename": {
+				"type": "string",
+				"defaultValue": "footballplayers.csv"
+			},
+			"sqldb": {
+				"type": "string",
+				"defaultValue": "dbo"
+			},
+			"sqltable": {
+				"type": "string",
+				"defaultValue": "football_players"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-09-30T11:19:16Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,24 @@
+{
+	"name": "DS_sinkblob",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_defaultblobkpidashboarding",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"folderPath": "folder",
+				"container": "folder"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

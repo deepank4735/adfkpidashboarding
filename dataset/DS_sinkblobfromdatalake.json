@@ -1,0 +1,24 @@
+{
+	"name": "DS_sinkblobfromdatalake",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_defaultblobkpidashboarding",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobStorageLocation",
+				"folderPath": "listofrecusrivefiles",
+				"container": "wildcardblob"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

@@ -1,0 +1,25 @@
+{
+	"name": "DS_sink_parameter",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "LS_defaultkpidashboarding",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": "dpeartment_testpara.csv",
+				"folderPath": "sink_para",
+				"fileSystem": "testingdefaultfolder"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

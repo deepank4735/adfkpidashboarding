@@ -1,0 +1,21 @@
+{
+	"name": "LS_kpidashboardingdev",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "SqlServer",
+		"typeProperties": {
+			"server": "DEEPANK\\SQLEXPRESS",
+			"database": "football_stats",
+			"encrypt": "mandatory",
+			"trustServerCertificate": true,
+			"authenticationType": "Windows",
+			"userName": "DEEPANK\\DEEPANK SHEKHAR",
+			"encryptedCredential": "eyJDcmVkZW50aWFsSWQiOiI5ODg5Y2UwNi1kYTMxLTQ1YmItOTY1OS00MThjMjY0ZjQ4NmEiLCJWZXJzaW9uIjoiMi4wIiwiQ2xhc3NUeXBlIjoiTWljcm9zb2Z0LkRhdGFQcm94eS5Db3JlLkludGVyU2VydmljZURhdGFDb250cmFjdC5DcmVkZW50aWFsU1UwNkNZMTQifQ=="
+		},
+		"connectVia": {
+			"referenceName": "integrationRuntime1",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}
