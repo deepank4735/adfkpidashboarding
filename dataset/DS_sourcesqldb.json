@@ -1,0 +1,49 @@
+{
+	"name": "DS_sourcesqldb",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureSqlsourcedb",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"dbo": {
+				"type": "string"
+			},
+			"tablename": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "customer_id",
+				"type": "varchar"
+			},
+			{
+				"name": "created_date",
+				"type": "date"
+			},
+			{
+				"name": "modified_date",
+				"type": "date"
+			},
+			{
+				"name": "sales_id",
+				"type": "int",
+				"precision": 10
+			}
+		],
+		"typeProperties": {
+			"schema": {
+				"value": "@dataset().dbo",
+				"type": "Expression"
+			},
+			"table": {
+				"value": "@dataset().tablename",
+				"type": "Expression"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

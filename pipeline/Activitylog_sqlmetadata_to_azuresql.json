@@ -1,0 +1,363 @@
+{
+	"name": "Activitylog_sqlmetadata_to_azuresql",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_Azuresqldatabase",
+						"type": "DatasetReference",
+						"parameters": {
+							"sqldatabase": "dbo",
+							"sqltablename": "metadata"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "ForEach1",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Lookup",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Lookup').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Copy lake to blob",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"recursive": true,
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "DelimitedTextSink",
+									"storeSettings": {
+										"type": "AzureBlobStorageWriteSettings"
+									},
+									"formatSettings": {
+										"type": "DelimitedTextWriteSettings",
+										"quoteAllText": true,
+										"fileExtension": ".txt"
+									}
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_datalake",
+									"type": "DatasetReference",
+									"parameters": {
+										"container": {
+											"value": "@item().Inputcontainer",
+											"type": "Expression"
+										},
+										"directory": {
+											"value": "@item().Inputdirectory",
+											"type": "Expression"
+										},
+										"filename": {
+											"value": "@item().Inputfile",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_blob",
+									"type": "DatasetReference",
+									"parameters": {
+										"container": {
+											"value": "@item().Outputcontainer",
+											"type": "Expression"
+										},
+										"directory": {
+											"value": "@item().Outputdirectory",
+											"type": "Expression"
+										},
+										"filename": {
+											"value": "@item().Outputfile",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "Stored procedure1",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "Copy lake to blob",
+									"dependencyConditions": [
+										"Completed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[dbo].[metadataprocd]",
+								"storedProcedureParameters": {
+									"filename": {
+										"value": {
+											"value": "@item().Outputfile",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"status": {
+										"value": {
+											"value": "@activity('Copy lake to blob').Status",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"startime": {
+										"value": {
+											"value": "@activity('Copy lake to blob').ExecutionStartTime",
+											"type": "Expression"
+										},
+										"type": "Datetime"
+									},
+									"endtime": {
+										"value": {
+											"value": "@activity('Copy lake to blob').ExecutionEndTime",
+											"type": "Expression"
+										},
+										"type": "Datetime"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "LS_sqlkpidashboarding",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "ForEach2",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "ForEach1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Lookup').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Copy data1",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "DelimitedTextSource",
+									"storeSettings": {
+										"type": "AzureBlobStorageReadSettings",
+										"recursive": true,
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "DelimitedTextReadSettings"
+									}
+								},
+								"sink": {
+									"type": "AzureSqlSink",
+									"preCopyScript": {
+										"value": "@concat('Truncate Table ',item().sqldatabase,'.',item().sqltablename)",
+										"type": "Expression"
+									},
+									"writeBehavior": "insert",
+									"sqlWriterUseTableLock": false,
+									"tableOption": "autoCreate",
+									"disableMetricsCollection": false
+								},
+								"enableStaging": false,
+								"translator": {
+									"type": "TabularTranslator",
+									"typeConversion": true,
+									"typeConversionSettings": {
+										"allowDataTruncation": true,
+										"treatBooleanAsNumber": false
+									}
+								}
+							},
+							"inputs": [
+								{
+									"referenceName": "DS_blob",
+									"type": "DatasetReference",
+									"parameters": {
+										"container": {
+											"value": "@item().Outputcontainer",
+											"type": "Expression"
+										},
+										"directory": {
+											"value": "@item().Outputdirectory",
+											"type": "Expression"
+										},
+										"filename": {
+											"value": "@item().Outputfile",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "DS_Azuresqldatabase",
+									"type": "DatasetReference",
+									"parameters": {
+										"sqldatabase": {
+											"value": "@item().sqldatabase",
+											"type": "Expression"
+										},
+										"sqltablename": {
+											"value": "@item().sqltablename",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						},
+						{
+							"name": "Stored procedure2",
+							"type": "SqlServerStoredProcedure",
+							"dependsOn": [
+								{
+									"activity": "Copy data1",
+									"dependencyConditions": [
+										"Completed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"storedProcedureName": "[dbo].[metadataproc]",
+								"storedProcedureParameters": {
+									"filename": {
+										"value": {
+											"value": "@item().Outputfile",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"status": {
+										"value": {
+											"value": "@activity('Copy data1').Status",
+											"type": "Expression"
+										},
+										"type": "String"
+									},
+									"startime": {
+										"value": {
+											"value": "@activity('Copy data1').ExecutionStartTime",
+											"type": "Expression"
+										},
+										"type": "Datetime"
+									},
+									"endtime": {
+										"value": {
+											"value": "@activity('Copy data1').ExecutionEndTime",
+											"type": "Expression"
+										},
+										"type": "Datetime"
+									}
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "LS_sqlkpidashboarding",
+								"type": "LinkedServiceReference"
+							}
+						}
+					]
+				}
+			}
+		],
+		"annotations": [],
+		"lastPublishTime": "2025-10-23T07:22:18Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

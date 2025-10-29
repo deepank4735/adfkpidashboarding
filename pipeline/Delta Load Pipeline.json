@@ -1,0 +1,262 @@
+{
+	"name": "Delta Load Pipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "Lookup_oldwatermark",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "oldwatermark",
+						"type": "DatasetReference"
+					},
+					"firstRowOnly": true
+				}
+			},
+			{
+				"name": "Lookup_newwatermark",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": "select max(modified_date) as modified_date\n  from \ndbo.sales\n",
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"dataset": {
+						"referenceName": "DS_sourcesqldb",
+						"type": "DatasetReference",
+						"parameters": {
+							"dbo": "dbo",
+							"tablename": "sales"
+						}
+					},
+					"firstRowOnly": true
+				}
+			},
+			{
+				"name": "Copy delta data",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Lookup_newwatermark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Lookup_oldwatermark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "AzureSqlSource",
+						"sqlReaderQuery": {
+							"value": "select * from sales where modified_date > '@{activity('Lookup_oldwatermark').output.firstRow.oldwatermark}' and modified_date <= '@{activity('Lookup_newwatermark').output.firstRow.modified_date}' ",
+							"type": "Expression"
+						},
+						"queryTimeout": "02:00:00",
+						"partitionOption": "None"
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_sourcesqldb",
+						"type": "DatasetReference",
+						"parameters": {
+							"dbo": "dbo",
+							"tablename": "sales"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_deltaload_datalake",
+						"type": "DatasetReference",
+						"parameters": {
+							"container": "deltaload",
+							"directory": {
+								"value": "@formatDateTime(utcNow(),'dd_MM_yyyy')",
+								"type": "Expression"
+							},
+							"filename": "deltafile.csv"
+						}
+					}
+				]
+			},
+			{
+				"name": "Stored procedure1",
+				"type": "SqlServerStoredProcedure",
+				"dependsOn": [
+					{
+						"activity": "Copy delta data",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"storedProcedureName": "[dbo].[updatewatermark]",
+					"storedProcedureParameters": {
+						"newwatermark": {
+							"value": {
+								"value": "@{activity('Lookup_newwatermark').output.firstRow.modified_date}",
+								"type": "Expression"
+							},
+							"type": "Datetime"
+						}
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_sqlkpidashboarding",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Copy data lake to azuresqldb",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Stored procedure1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "AzureSqlSink",
+						"writeBehavior": "upsert",
+						"upsertSettings": {
+							"useTempDB": true,
+							"keys": [
+								"sales_id"
+							]
+						},
+						"sqlWriterUseTableLock": false,
+						"disableMetricsCollection": false
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "DS_deltaload_datalake",
+						"type": "DatasetReference",
+						"parameters": {
+							"container": "deltaload",
+							"directory": "@formatDateTime(utcNow(),'dd_MM_yyyy')",
+							"filename": "deltafile.csv"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "DS_Azuresqldatabase",
+						"type": "DatasetReference",
+						"parameters": {
+							"sqldatabase": "dbo",
+							"sqltablename": "sales"
+						}
+					}
+				]
+			}
+		],
+		"variables": {
+			"abc": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2025-10-25T19:14:26Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

@@ -1,0 +1,9 @@
+{
+	"name": "kpidashb",
+	"location": "centralindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "d21b532f-a75c-4ed0-b6ef-7f13099a677b",
+		"tenantId": "2a2d9ae6-3028-4b46-8cc0-8056ea3b498a"
+	}
+}
